@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"go.od2.network/hive-api"
+	"go.od2.network/hive-api/worker"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,7 +21,7 @@ import (
 // Simple is a works off items one-by-one from multiple routines.
 // It is resilient to network failures and auto-heals failed gRPC connections.
 type Simple struct {
-	Assignments hive.AssignmentsClient
+	Assignments worker.AssignmentsClient
 	Log         *zap.Logger
 	Handler     SimpleHandler
 	Collection  string
@@ -70,7 +71,7 @@ func (w *Simple) Run(outerCtx context.Context) error {
 	hardCtx, hardCancel := context.WithCancel(context.Background())
 	defer hardCancel()
 	// Allocate stream.
-	openStream, err := w.Assignments.OpenAssignmentsStream(softCtx, &hive.OpenAssignmentsStreamRequest{
+	openStream, err := w.Assignments.OpenAssignmentsStream(softCtx, &worker.OpenAssignmentsStreamRequest{
 		Collection: w.Collection,
 	})
 	if err != nil {
@@ -78,7 +79,7 @@ func (w *Simple) Run(outerCtx context.Context) error {
 	}
 	w.Log.Info("Opened stream")
 	defer func() {
-		_, err := w.Assignments.CloseAssignmentsStream(hardCtx, &hive.CloseAssignmentsStreamRequest{
+		_, err := w.Assignments.CloseAssignmentsStream(hardCtx, &worker.CloseAssignmentsStreamRequest{
 			StreamId:   openStream.StreamId,
 			Collection: w.Collection,
 		})
@@ -183,7 +184,7 @@ func (s *session) fill() error {
 		}
 		// Request more assignments.
 		s.Log.Debug("Want more assignments", zap.Int32("add_watermark", delta))
-		_, err = s.Assignments.WantAssignments(s.softCtx, &hive.WantAssignmentsRequest{
+		_, err = s.Assignments.WantAssignments(s.softCtx, &worker.WantAssignmentsRequest{
 			StreamId:     s.sessionID,
 			AddWatermark: delta,
 			Collection:   s.Collection,
@@ -227,7 +228,7 @@ func (r *reporter) flush() {
 	if len(r.batch) <= 0 {
 		return
 	}
-	_, err := r.Assignments.ReportAssignments(r.hardCtx, &hive.ReportAssignmentsRequest{
+	_, err := r.Assignments.ReportAssignments(r.hardCtx, &worker.ReportAssignmentsRequest{
 		Reports:    r.batch,
 		Collection: r.Collection,
 	})
@@ -270,7 +271,7 @@ func (s *session) worker(reports chan<- *hive.AssignmentReport, assigns <-chan *
 // Until the soft context is cancelled, the returned value is just a hint.
 // Afterwards, return value is guaranteed to be equal or greater than the immediate/accurate value.
 func (s *session) numPending(ctx context.Context) (int32, error) {
-	pendingAssignCountRes, err := s.Assignments.GetPendingAssignmentsCount(ctx, &hive.GetPendingAssignmentsCountRequest{
+	pendingAssignCountRes, err := s.Assignments.GetPendingAssignmentsCount(ctx, &worker.GetPendingAssignmentsCountRequest{
 		StreamId:   s.sessionID,
 		Collection: s.Collection,
 	})
@@ -306,7 +307,7 @@ func (s *session) pull(assigns chan<- *hive.Assignment) error {
 
 func (s *session) pullOne(assigns chan<- *hive.Assignment) error {
 	// Connect to stream.
-	grpcStream, err := s.Assignments.StreamAssignments(s.hardCtx, &hive.StreamAssignmentsRequest{
+	grpcStream, err := s.Assignments.StreamAssignments(s.hardCtx, &worker.StreamAssignmentsRequest{
 		StreamId:   s.sessionID,
 		Collection: s.Collection,
 	})
@@ -338,7 +339,7 @@ func (s *session) pullOne(assigns chan<- *hive.Assignment) error {
 // It dies when the stream exits.
 type stream struct {
 	*session
-	stream hive.Assignments_StreamAssignmentsClient
+	stream worker.Assignments_StreamAssignmentsClient
 }
 
 // pull consumes assignments from a single stream and exits early on context cancel.
@@ -376,7 +377,7 @@ func (s *stream) pull(ctx context.Context, assigns chan<- *hive.Assignment) erro
 // It exits prematurely if the context is cancelled.
 func (s *stream) drain(assigns chan<- *hive.Assignment) {
 	// Cut off stream from any more assignments.
-	res, err := s.Assignments.SurrenderAssignments(s.hardCtx, &hive.SurrenderAssignmentsRequest{
+	res, err := s.Assignments.SurrenderAssignments(s.hardCtx, &worker.SurrenderAssignmentsRequest{
 		StreamId:   s.session.sessionID,
 		Collection: s.Collection,
 	})

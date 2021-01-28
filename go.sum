@@ -53,6 +53,8 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 go.od2.network/hive-api v0.0.3 h1:HWl7ZWD6txmYhd553z7w0cXAcqiM87hAHkqHyaUDK8o=
 go.od2.network/hive-api v0.0.3/go.mod h1:I6JOEm4KFQMxMXfpuMChKoSGOIlO6MuQ+219NfIdgZQ=
+go.od2.network/hive-api v0.2.0 h1:QZoTApP6Z8gECy/gRkdXpm7M9+e2TIe+TTj069o9hS0=
+go.od2.network/hive-api v0.2.0/go.mod h1:I6JOEm4KFQMxMXfpuMChKoSGOIlO6MuQ+219NfIdgZQ=
 go.uber.org/atomic v1.6.0 h1:Ezj3JGmsOnG1MoRWQkPBsKLe9DwWD9QeXzTRzzldNVk=
 go.uber.org/atomic v1.6.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
 go.uber.org/multierr v1.5.0 h1:KCa4XfM8CWFCpxXRGok+Q0SS/0XBhMDbHHGABQLvD2A=
